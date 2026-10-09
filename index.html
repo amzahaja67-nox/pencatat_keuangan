@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DompetKu — Pencatat Keuangan Pribadi</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="logo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10h20M16 15h2"/></svg></div>DompetKu</div>
+    <button class="nav active" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</button>
+    <button class="nav" data-page="transaksi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7h13M17 3l3 4-3 4M17 17H4M7 13l-3 4 3 4"/></svg>Transaksi</button>
+    <button class="nav" data-page="dompet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10h20M16 15h2"/></svg>Dompet</button>
+    <button class="nav" data-page="laporan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Laporan</button>
+    <button class="nav" data-page="budget"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg>Budgeting</button>
+    <button class="nav" data-page="cari"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Cari &amp; Filter</button>
+    <button class="nav" data-page="hutang"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 8a5 5 0 0 0-10 0c0 5 10 5 10 10a5 5 0 0 1-10 0M12 2v20"/></svg>Hutang Piutang</button>
+    <div class="foot">Data tersimpan lokal di browser Anda.<br><button class="btn ghost sm" style="margin-top:10px" onclick="exportData()">Export JSON</button> <button class="btn ghost sm" style="margin-top:10px" onclick="document.getElementById('importFile').click()">Import</button><input type="file" id="importFile" accept=".json" hidden onchange="importData(this)"></div>
+  </aside>
+
+  <main class="main">
+    <!-- DASHBOARD -->
+    <section class="page active" id="page-dashboard">
+      <div class="topbar"><div><h1>Dashboard</h1><p id="dashDate"></p></div><button class="btn" onclick="openTx()">+ Catat Transaksi</button></div>
+      <div class="grid g4" style="margin-bottom:16px">
+        <div class="card stat primary"><div class="lbl">Total Saldo</div><div class="val" id="dTotal">Rp0</div><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg></div></div>
+        <div class="card stat"><div class="lbl">Pemasukan Bulan Ini</div><div class="val" style="color:var(--green)" id="dIn">Rp0</div><div class="ic g"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></div></div>
+        <div class="card stat"><div class="lbl">Pengeluaran Bulan Ini</div><div class="val" style="color:var(--red)" id="dOut">Rp0</div><div class="ic r"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg></div></div>
+        <div class="card stat"><div class="lbl">Sisa Hutang Bersih</div><div class="val" id="dDebt">Rp0</div><div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M17 8a5 5 0 0 0-10 0c0 5 10 5 10 10a5 5 0 0 1-10 0M12 2v20"/></svg></div></div>
+      </div>
+      <div class="grid g21">
+        <div class="card"><h3>Arus Kas 6 Bulan Terakhir</h3><div id="dashChart"></div></div>
+        <div class="card"><h3>Dompet</h3><div id="dashWallets"></div></div>
+        <div class="card"><h3>Transaksi Terbaru <button class="btn ghost sm" onclick="go('transaksi')">Lihat semua</button></h3><div id="dashRecent"></div></div>
+        <div class="card"><h3>Budget Bulan Ini <button class="btn ghost sm" onclick="go('budget')">Atur</button></h3><div id="dashBudget"></div></div>
+      </div>
+    </section>
+
+    <!-- TRANSAKSI -->
+    <section class="page" id="page-transaksi">
+      <div class="topbar"><div><h1>Transaksi</h1><p>Semua catatan pemasukan, pengeluaran &amp; transfer</p></div><div style="display:flex;gap:8px;align-items:center"><input type="month" class="inp" id="txMonth" style="width:auto"><button class="btn" onclick="openTx()">+ Tambah</button></div></div>
+      <div class="grid g3" style="margin-bottom:16px">
+        <div class="card stat"><div class="lbl">Pemasukan</div><div class="val" style="color:var(--green)" id="tIn">Rp0</div></div>
+        <div class="card stat"><div class="lbl">Pengeluaran</div><div class="val" style="color:var(--red)" id="tOut">Rp0</div></div>
+        <div class="card stat"><div class="lbl">Selisih</div><div class="val" id="tNet">Rp0</div></div>
+      </div>
+      <div class="card"><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Kategori</th><th class="hide-m">Catatan</th><th class="hide-m">Dompet</th><th style="text-align:right">Jumlah</th><th></th></tr></thead><tbody id="txTable"></tbody></table></div><div id="txEmpty"></div></div>
+    </section>
+
+    <!-- DOMPET -->
+    <section class="page" id="page-dompet">
+      <div class="topbar"><div><h1>Dompet</h1><p>Kelola rekening, tunai, e-wallet, dll</p></div><div style="display:flex;gap:8px"><button class="btn ghost" onclick="openTx('transfer')">Transfer</button><button class="btn" onclick="openWallet()">+ Dompet Baru</button></div></div>
+      <div class="grid g3" id="walletGrid"></div>
+    </section>
+
+    <!-- LAPORAN -->
+    <section class="page" id="page-laporan">
+      <div class="topbar"><div><h1>Laporan</h1><p>Ringkasan &amp; analisis keuangan</p></div><input type="month" class="inp" id="repMonth" style="width:auto"></div>
+      <div class="grid g3" style="margin-bottom:16px">
+        <div class="card stat"><div class="lbl">Pemasukan</div><div class="val" style="color:var(--green)" id="rIn">Rp0</div></div>
+        <div class="card stat"><div class="lbl">Pengeluaran</div><div class="val" style="color:var(--red)" id="rOut">Rp0</div></div>
+        <div class="card stat"><div class="lbl">Tabungan Bersih</div><div class="val" id="rNet">Rp0</div><div class="lbl" id="rRate" style="margin-top:4px;text-transform:none"></div></div>
+      </div>
+      <div class="grid g2" style="margin-bottom:16px">
+        <div class="card"><h3>Pengeluaran per Kategori</h3><div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap"><div id="pieOut"></div><div class="legend" id="legOut" style="flex:1;min-width:160px"></div></div></div>
+        <div class="card"><h3>Pemasukan per Kategori</h3><div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap"><div id="pieIn"></div><div class="legend" id="legIn" style="flex:1;min-width:160px"></div></div></div>
+      </div>
+      <div class="grid g2">
+        <div class="card"><h3>Pengeluaran Harian</h3><div id="dailyChart"></div></div>
+        <div class="card"><h3>Tren 12 Bulan</h3><div id="trendChart"></div></div>
+      </div>
+    </section>
+
+    <!-- BUDGET -->
+    <section class="page" id="page-budget">
+      <div class="topbar"><div><h1>Budgeting</h1><p>Batas pengeluaran per kategori setiap bulan</p></div><div style="display:flex;gap:8px;align-items:center"><input type="month" class="inp" id="bdMonth" style="width:auto"><button class="btn" onclick="openBudget()">+ Budget</button></div></div>
+      <div class="grid g3" style="margin-bottom:16px">
+        <div class="card stat"><div class="lbl">Total Budget</div><div class="val" id="bTotal">Rp0</div></div>
+        <div class="card stat"><div class="lbl">Terpakai</div><div class="val" style="color:var(--red)" id="bUsed">Rp0</div></div>
+        <div class="card stat"><div class="lbl">Sisa</div><div class="val" style="color:var(--green)" id="bLeft">Rp0</div></div>
+      </div>
+      <div class="grid g2" id="budgetGrid"></div>
+    </section>
+
+    <!-- CARI -->
+    <section class="page" id="page-cari">
+      <div class="topbar"><div><h1>Cari &amp; Filter</h1><p>Temukan transaksi lama dengan cepat</p></div><button class="btn ghost" onclick="resetFilter()">Reset</button></div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="search-wrap" style="margin-bottom:12px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input class="inp" id="fQ" placeholder="Cari catatan, kategori, dompet, nominal..." oninput="renderSearch()"></div>
+        <div class="filters">
+          <div class="field"><label>Jenis</label><select class="inp" id="fType" onchange="renderSearch()"><option value="">Semua</option><option value="out">Pengeluaran</option><option value="in">Pemasukan</option><option value="transfer">Transfer</option></select></div>
+          <div class="field"><label>Kategori</label><select class="inp" id="fCat" onchange="renderSearch()"></select></div>
+          <div class="field"><label>Dompet</label><select class="inp" id="fWallet" onchange="renderSearch()"></select></div>
+          <div class="field"><label>Dari Tanggal</label><input type="date" class="inp" id="fFrom" onchange="renderSearch()"></div>
+          <div class="field"><label>Sampai</label><input type="date" class="inp" id="fTo" onchange="renderSearch()"></div>
+          <div class="field"><label>Min (Rp)</label><input type="number" class="inp" id="fMin" oninput="renderSearch()" placeholder="0"></div>
+          <div class="field"><label>Maks (Rp)</label><input type="number" class="inp" id="fMax" oninput="renderSearch()" placeholder="∞"></div>
+          <div class="field"><label>Urutkan</label><select class="inp" id="fSort" onchange="renderSearch()"><option value="dateDesc">Terbaru</option><option value="dateAsc">Terlama</option><option value="amtDesc">Nominal terbesar</option><option value="amtAsc">Nominal terkecil</option></select></div>
+        </div>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--muted)" id="fSummary"></div>
+      </div>
+      <div class="card"><div class="table-wrap"><table><thead><tr><th>Tanggal</th><th>Kategori</th><th class="hide-m">Catatan</th><th class="hide-m">Dompet</th><th style="text-align:right">Jumlah</th><th></th></tr></thead><tbody id="fTable"></tbody></table></div><div id="fEmpty"></div></div>
+    </section>
+
+    <!-- HUTANG -->
+    <section class="page" id="page-hutang">
+      <div class="topbar"><div><h1>Hutang Piutang</h1><p>Catat uang yang Anda pinjam dan pinjamkan</p></div><button class="btn" onclick="openDebt()">+ Tambah</button></div>
+      <div class="grid g3" style="margin-bottom:16px">
+        <div class="card stat"><div class="lbl">Hutang Saya (belum lunas)</div><div class="val" style="color:var(--red)" id="hOwe">Rp0</div></div>
+        <div class="card stat"><div class="lbl">Piutang (belum diterima)</div><div class="val" style="color:var(--green)" id="hOwed">Rp0</div></div>
+        <div class="card stat"><div class="lbl">Posisi Bersih</div><div class="val" id="hNet">Rp0</div></div>
+      </div>
+      <div class="tabs"><button class="on" data-dt="all" onclick="setDebtTab(this)">Semua</button><button data-dt="hutang" onclick="setDebtTab(this)">Hutang</button><button data-dt="piutang" onclick="setDebtTab(this)">Piutang</button><button data-dt="lunas" onclick="setDebtTab(this)">Lunas</button></div>
+      <div class="grid g2" id="debtGrid"></div>
+    </section>
+  </main>
+
+  <nav class="mob-nav">
+    <button class="active" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Home</button>
+    <button data-page="transaksi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 7h13M17 3l3 4-3 4M17 17H4M7 13l-3 4 3 4"/></svg>Transaksi</button>
+    <button data-page="dompet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg>Dompet</button>
+    <button data-page="laporan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7"/></svg>Laporan</button>
+    <button data-page="budget"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg>Budget</button>
+    <button data-page="cari"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>Cari</button>
+    <button data-page="hutang"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8a5 5 0 0 0-10 0c0 5 10 5 10 10a5 5 0 0 1-10 0M12 2v20"/></svg>Hutang</button>
+  </nav>
+</div>
+
+<!-- MODAL TRANSAKSI -->
+<div class="overlay" id="mTx"><div class="modal">
+  <h2><span id="mTxTitle">Catat Transaksi</span><button class="btn icon" onclick="closeM('mTx')">✕</button></h2>
+  <div class="seg" style="margin-bottom:16px"><button data-t="out" onclick="setTxType('out')">Pengeluaran</button><button data-t="in" onclick="setTxType('in')">Pemasukan</button><button data-t="transfer" onclick="setTxType('transfer')">Transfer</button></div>
+  <input type="hidden" id="txId">
+  <div class="field"><label>Jumlah (Rp)</label><input type="number" class="inp" id="txAmt" placeholder="0" min="0" style="font-size:20px;font-weight:700"></div>
+  <div class="row">
+    <div class="field"><label>Tanggal</label><input type="date" class="inp" id="txDate"></div>
+    <div class="field" id="txCatWrap"><label>Kategori</label><select class="inp" id="txCat"></select></div>
+  </div>
+  <div class="row">
+    <div class="field"><label id="txWalletLbl">Dompet</label><select class="inp" id="txWallet"></select></div>
+    <div class="field" id="txToWrap" style="display:none"><label>Ke Dompet</label><select class="inp" id="txTo"></select></div>
+  </div>
+  <div class="field"><label>Catatan</label><input class="inp" id="txNote" placeholder="mis. Makan siang, Gaji bulan ini..."></div>
+  <div class="acts"><button class="btn ghost" onclick="closeM('mTx')">Batal</button><button class="btn" onclick="saveTx()">Simpan</button></div>
+</div></div>
+
+<!-- MODAL DOMPET -->
+<div class="overlay" id="mWallet"><div class="modal">
+  <h2><span id="mWalletTitle">Dompet Baru</span><button class="btn icon" onclick="closeM('mWallet')">✕</button></h2>
+  <input type="hidden" id="wId">
+  <div class="field"><label>Nama Dompet</label><input class="inp" id="wName" placeholder="mis. BCA, Tunai, GoPay"></div>
+  <div class="row">
+    <div class="field"><label>Jenis</label><select class="inp" id="wType"><option>Tunai</option><option>Bank</option><option>E-Wallet</option><option>Investasi</option><option>Lainnya</option></select></div>
+    <div class="field"><label>Saldo Awal (Rp)</label><input type="number" class="inp" id="wInit" placeholder="0"></div>
+  </div>
+  <div class="field"><label>Warna</label><div style="display:flex;gap:8px" id="wColors"></div></div>
+  <div class="acts"><button class="btn ghost" onclick="closeM('mWallet')">Batal</button><button class="btn" onclick="saveWallet()">Simpan</button></div>
+</div></div>
+
+<!-- MODAL BUDGET -->
+<div class="overlay" id="mBudget"><div class="modal">
+  <h2><span>Atur Budget</span><button class="btn icon" onclick="closeM('mBudget')">✕</button></h2>
+  <input type="hidden" id="bId">
+  <div class="field"><label>Kategori Pengeluaran</label><select class="inp" id="bCat"></select></div>
+  <div class="field"><label>Batas per Bulan (Rp)</label><input type="number" class="inp" id="bAmt" placeholder="0"></div>
+  <div class="acts"><button class="btn ghost" onclick="closeM('mBudget')">Batal</button><button class="btn" onclick="saveBudget()">Simpan</button></div>
+</div></div>
+
+<!-- MODAL HUTANG -->
+<div class="overlay" id="mDebt"><div class="modal">
+  <h2><span id="mDebtTitle">Tambah Hutang/Piutang</span><button class="btn icon" onclick="closeM('mDebt')">✕</button></h2>
+  <input type="hidden" id="hId">
+  <div class="seg" style="margin-bottom:16px"><button data-h="hutang" onclick="setDebtType('hutang')">Hutang (saya pinjam)</button><button data-h="piutang" onclick="setDebtType('piutang')">Piutang (saya pinjamkan)</button></div>
+  <div class="field"><label>Nama Orang / Pihak</label><input class="inp" id="hName" placeholder="mis. Budi, Bank XYZ"></div>
+  <div class="row">
+    <div class="field"><label>Jumlah (Rp)</label><input type="number" class="inp" id="hAmt" placeholder="0"></div>
+    <div class="field"><label>Jatuh Tempo</label><input type="date" class="inp" id="hDue"></div>
+  </div>
+  <div class="field"><label>Keterangan</label><input class="inp" id="hNote" placeholder="opsional"></div>
+  <div class="acts"><button class="btn ghost" onclick="closeM('mDebt')">Batal</button><button class="btn" onclick="saveDebt()">Simpan</button></div>
+</div></div>
+
+<!-- MODAL BAYAR HUTANG -->
+<div class="overlay" id="mPay"><div class="modal">
+  <h2><span>Catat Pembayaran</span><button class="btn icon" onclick="closeM('mPay')">✕</button></h2>
+  <input type="hidden" id="pId">
+  <p id="pInfo" style="color:var(--muted);margin-bottom:14px"></p>
+  <div class="field"><label>Jumlah Dibayar (Rp)</label><input type="number" class="inp" id="pAmt"></div>
+  <div class="field"><label>Dari/Ke Dompet (otomatis catat transaksi)</label><select class="inp" id="pWallet"><option value="">— Tidak catat ke dompet —</option></select></div>
+  <div class="acts"><button class="btn ghost" onclick="closeM('mPay')">Batal</button><button class="btn" onclick="savePay()">Simpan</button></div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script src="js/data.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
