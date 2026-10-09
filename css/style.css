@@ -102,6 +102,9 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .card h3{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px;font-size:14px;font-weight:650;letter-spacing:.05px}
 .stat{position:relative;overflow:hidden;padding:21px}
 .stat .lbl{color:var(--muted);font-size:11px;font-weight:650;text-transform:uppercase;letter-spacing:.7px}
+@media(min-width:721px){
+  .stat .lbl{max-width:calc(100% - 50px);min-height:2.7em;line-height:1.35}
+}
 .stat .val{margin-top:9px;font-size:clamp(19px,2vw,24px);font-weight:720;letter-spacing:-.45px}
 .stat.primary{color:#fff;border-color:rgba(96,165,250,.34);background:linear-gradient(135deg,#173b72 0%,#1d4e91 52%,#2563eb 100%);box-shadow:0 12px 30px rgba(37,99,235,.18)}
 .stat.primary .lbl{color:rgba(230,240,255,.76)}
