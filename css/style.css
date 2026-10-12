@@ -380,8 +380,8 @@ body::after{bottom:4%;left:24%;width:280px;height:280px;background:#0e7490;anima
   -webkit-backdrop-filter:none;
 }
 .mob-nav{
-  border-top-color:rgba(183,210,250,.16);
-  background:rgba(8,18,34,.78);
+  border-top-color:rgba(183,210,250,.11);
+  background:rgba(4,10,20,.98);
   box-shadow:0 -5px 14px rgba(0,0,0,.14);
   backdrop-filter:none;
   -webkit-backdrop-filter:none;
