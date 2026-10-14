@@ -23,7 +23,7 @@ function donut(items,total){
   return s;
 }
 function catBreak(list,type){
-  const map={}; list.filter(t=>t.type===type).forEach(t=>map[t.cat]=(map[t.cat]||0)+t.amt);
+  const map={}; list.filter(t=>t.type===type).forEach(t=>map[t.cat]=(map[t.cat]||0)+(type==='out'?txOutAmount(t):t.amt));
   return Object.entries(map).map(([l,v])=>({l,v})).sort((a,b)=>b.v-a.v);
 }
 function renderPie(items,pieId,legId,type){

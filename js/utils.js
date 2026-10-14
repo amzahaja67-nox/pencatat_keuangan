@@ -20,10 +20,11 @@ function walletBalance(id){
   let b=+w.init||0;
   DB.tx.forEach(t=>{
     if(t.type==='in'&&t.wallet===id) b+=t.amt;
-    if(t.type==='out'&&t.wallet===id) b-=t.amt;
-    if(t.type==='transfer'){ if(t.wallet===id) b-=t.amt; if(t.to===id) b+=t.amt; }
+    if(t.type==='out'&&t.wallet===id) b-=t.amt+(+t.fee||0);
+    if(t.type==='transfer'){ if(t.wallet===id) b-=t.amt+(+t.fee||0); if(t.to===id) b+=t.amt; }
   });
   return b;
 }
+const txOutAmount = t => t.type==='out' ? t.amt+(+t.fee||0) : t.amt;
 const txMonthly = m => DB.tx.filter(t=>ym(t.date)===m);
-const sum = (arr,type) => arr.filter(t=>t.type===type).reduce((a,t)=>a+t.amt,0);
+const sum = (arr,type) => arr.filter(t=>t.type===type).reduce((a,t)=>a+(type==='out'?txOutAmount(t):t.amt),0);

@@ -23,6 +23,13 @@ function setTxType(t){
   document.getElementById('txCatWrap').style.display=t==='transfer'?'none':'';
   document.getElementById('txToWrap').style.display=t==='transfer'?'':'none';
   document.getElementById('txWalletLbl').textContent=t==='transfer'?'Dari Dompet':'Dompet';
+  updateTxFeeVisibility();
+}
+function updateTxFeeVisibility(){
+  const wallet=DB.wallets.find(w=>w.id===document.getElementById('txWallet').value);
+  const show=txType!=='in'&&wallet?.type==='E-Wallet';
+  document.getElementById('txFeeWrap').style.display=show?'':'none';
+  if(!show) document.getElementById('txFee').value='';
 }
 function openTx(type,id){
   if(!DB.wallets.length){toast('Buat dompet terlebih dahulu');go('dompet');return}
@@ -36,16 +43,19 @@ function openTx(type,id){
   if(t&&t.cat) document.getElementById('txCat').value=t.cat;
   document.getElementById('txWallet').value=t?t.wallet:DB.wallets[0].id;
   if(t&&t.to) document.getElementById('txTo').value=t.to; else if(DB.wallets[1]) document.getElementById('txTo').value=DB.wallets[1].id;
+  document.getElementById('txFee').value=t?.fee||'';
+  updateTxFeeVisibility();
   document.getElementById('txNote').value=t?t.note:'';
   openM('mTx'); setTimeout(()=>document.getElementById('txAmt').focus(),50);
 }
 function saveTx(){
   const amt=+document.getElementById('txAmt').value, date=document.getElementById('txDate').value;
-  const wallet=document.getElementById('txWallet').value, to=document.getElementById('txTo').value;
+  const wallet=document.getElementById('txWallet').value, to=document.getElementById('txTo').value, fee=+document.getElementById('txFee').value||0;
   if(!amt||amt<=0) return toast('Jumlah harus lebih dari 0');
   if(!date) return toast('Tanggal wajib diisi');
+  if(fee<0) return toast('Biaya admin tidak boleh negatif');
   if(txType==='transfer'&&wallet===to) return toast('Dompet asal dan tujuan harus berbeda');
-  const obj={id:document.getElementById('txId').value||uid(),type:txType,amt,date,cat:txType==='transfer'?'Transfer':document.getElementById('txCat').value,wallet,to:txType==='transfer'?to:null,note:document.getElementById('txNote').value.trim()};
+  const obj={id:document.getElementById('txId').value||uid(),type:txType,amt,date,fee:txType==='out'||txType==='transfer'?fee:0,cat:txType==='transfer'?'Transfer':document.getElementById('txCat').value,wallet,to:txType==='transfer'?to:null,note:document.getElementById('txNote').value.trim()};
   const i=DB.tx.findIndex(x=>x.id===obj.id); if(i>=0) DB.tx[i]=obj; else DB.tx.push(obj);
   closeM('mTx'); save(); toast('Transaksi disimpan');
 }
@@ -54,12 +64,12 @@ function delTx(id){ if(!confirm('Hapus transaksi ini?')) return; DB.tx=DB.tx.fil
 function txRow(t){
   const cls=t.type==='in'?'in':t.type==='out'?'out':'tf', sign=t.type==='in'?'+':t.type==='out'?'−':'';
   const wal=t.type==='transfer'?`${esc(wName(t.wallet))} → ${esc(wName(t.to))}`:esc(wName(t.wallet));
-  return `<tr><td style="white-space:nowrap">${fmtDate(t.date)}</td><td><div style="display:flex;align-items:center;gap:10px"><div class="cat-ic">${catIcon(t.type,t.cat)}</div><div><b style="font-weight:600">${esc(t.cat)}</b><div class="hide-m" style="font-size:12px;color:var(--muted)"></div></div></div></td><td class="hide-m" style="color:var(--muted)">${esc(t.note)||'—'}</td><td class="hide-m"><span class="chip">${wal}</span></td><td class="amt ${cls}" style="text-align:right">${sign}${fmt(t.amt)}</td><td style="white-space:nowrap;text-align:right"><button class="btn icon" onclick="openTx(null,'${t.id}')" title="Edit">✎</button><button class="btn icon del" onclick="delTx('${t.id}')" title="Hapus">🗑</button></td></tr>`;
+  return `<tr><td style="white-space:nowrap">${fmtDate(t.date)}</td><td><div style="display:flex;align-items:center;gap:10px"><div class="cat-ic">${catIcon(t.type,t.cat)}</div><div><b style="font-weight:600">${esc(t.cat)}</b><div class="hide-m" style="font-size:12px;color:var(--muted)"></div></div></div></td><td class="hide-m" style="color:var(--muted)">${esc(t.note)||'—'}</td><td class="hide-m"><span class="chip">${wal}</span></td><td class="amt ${cls}" style="text-align:right">${sign}${fmt(txOutAmount(t))}${t.fee?`<div style="font-size:12px;color:var(--muted)">termasuk admin ${fmt(t.fee)}</div>`:''}</td><td style="white-space:nowrap;text-align:right"><button class="btn icon" onclick="openTx(null,'${t.id}')" title="Edit">✎</button><button class="btn icon del" onclick="delTx('${t.id}')" title="Hapus">🗑</button></td></tr>`;
 }
 function renderTx(){
   const m=document.getElementById('txMonth').value;
   const list=txMonthly(m).sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
-  const i=sum(list,'in'),o=sum(list,'out');
+  const i=sum(list,'in'),o=list.filter(t=>t.type==='out').reduce((a,t)=>a+txOutAmount(t),0);
   document.getElementById('tIn').textContent=fmt(i); document.getElementById('tOut').textContent=fmt(o);
   const n=document.getElementById('tNet'); n.textContent=(i-o<0?'−':'')+fmt(Math.abs(i-o)); n.style.color=i-o>=0?'var(--green)':'var(--red)';
   document.getElementById('txTable').innerHTML=list.map(txRow).join('');
@@ -112,7 +122,7 @@ function renderReport(){
   renderPie(catBreak(list,'out'),'pieOut','legOut','out');
   renderPie(catBreak(list,'in'),'pieIn','legIn','in');
   const days=new Date(+m.slice(0,4),+m.slice(5,7),0).getDate();
-  const daily=Array.from({length:days},(_,d)=>({l:d+1,v:0})); list.filter(t=>t.type==='out').forEach(t=>daily[+t.date.slice(8,10)-1].v+=t.amt);
+  const daily=Array.from({length:days},(_,d)=>({l:d+1,v:0})); list.filter(t=>t.type==='out').forEach(t=>daily[+t.date.slice(8,10)-1].v+=txOutAmount(t));
   document.getElementById('dailyChart').innerHTML=barChart(daily,{h:160,color:'#2f7bff'});
   const months=lastMonths(12,m).map(mm=>{const l=txMonthly(mm);return {l:new Date(mm+'-01T00:00').toLocaleDateString('id-ID',{month:'short'}),v:sum(l,'in'),v2:sum(l,'out')}});
   document.getElementById('trendChart').innerHTML=barChart(months,{h:160,color:'#16a34a',color2:'#e5484d'})+`<div style="display:flex;gap:16px;font-size:12px;color:var(--muted);margin-top:8px"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#16a34a;margin-right:6px"></i>Pemasukan</span><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#e5484d;margin-right:6px"></i>Pengeluaran</span></div>`;
@@ -137,7 +147,7 @@ function saveBudget(){
 function delBudget(id){ if(!confirm('Hapus budget ini?')) return; DB.budgets=DB.budgets.filter(b=>b.id!==id); save(); }
 function budgetItems(m){
   const list=txMonthly(m).filter(t=>t.type==='out');
-  return DB.budgets.map(b=>{const used=list.filter(t=>t.cat===b.cat).reduce((a,t)=>a+t.amt,0);return {...b,used,pct:Math.min(100,used/b.amt*100),real:used/b.amt*100}});
+  return DB.budgets.map(b=>{const used=list.filter(t=>t.cat===b.cat).reduce((a,t)=>a+txOutAmount(t),0);return {...b,used,pct:Math.min(100,used/b.amt*100),real:used/b.amt*100}});
 }
 function progHtml(it){const cls=it.real>=100?'over':it.real>=80?'warn':'';return `<div class="prog"><i class="${cls}" style="width:${it.pct}%"></i></div>`}
 function renderBudget(){
@@ -154,11 +164,11 @@ function renderSearch(){
   const from=document.getElementById('fFrom').value, to=document.getElementById('fTo').value, min=+document.getElementById('fMin').value||0, max=+document.getElementById('fMax').value||Infinity, sort=document.getElementById('fSort').value;
   let list=DB.tx.filter(t=>{
     if(type&&t.type!==type) return false; if(cat&&t.cat!==cat) return false; if(wal&&t.wallet!==wal&&t.to!==wal) return false;
-    if(from&&t.date<from) return false; if(to&&t.date>to) return false; if(t.amt<min||t.amt>max) return false;
-    if(q){const hay=[t.note,t.cat,wName(t.wallet),t.to?wName(t.to):'',String(t.amt),fmtDate(t.date)].join(' ').toLowerCase(); if(!hay.includes(q)) return false}
+    if(from&&t.date<from) return false; if(to&&t.date>to) return false; if(txOutAmount(t)<min||txOutAmount(t)>max) return false;
+    if(q){const hay=[t.note,t.cat,wName(t.wallet),t.to?wName(t.to):'',String(txOutAmount(t)),fmtDate(t.date)].join(' ').toLowerCase(); if(!hay.includes(q)) return false}
     return true;
   });
-  list.sort((a,b)=>sort==='dateDesc'?b.date.localeCompare(a.date):sort==='dateAsc'?a.date.localeCompare(b.date):sort==='amtDesc'?b.amt-a.amt:a.amt-b.amt);
+  list.sort((a,b)=>sort==='dateDesc'?b.date.localeCompare(a.date):sort==='dateAsc'?a.date.localeCompare(b.date):sort==='amtDesc'?txOutAmount(b)-txOutAmount(a):txOutAmount(a)-txOutAmount(b));
   const i=sum(list,'in'),o=sum(list,'out');
   document.getElementById('fSummary').innerHTML=`<span><b>${list.length}</b> transaksi</span><span>Pemasukan <b style="color:var(--green)">${fmt(i)}</b></span><span>Pengeluaran <b style="color:var(--red)">${fmt(o)}</b></span>`;
   document.getElementById('fTable').innerHTML=list.slice(0,300).map(txRow).join('');
